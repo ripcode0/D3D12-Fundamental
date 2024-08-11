@@ -1,27 +1,20 @@
 #include <iostream>
 
 #include "application.h"
-#include "sample.h"
-
-class triangle : public sample
-{
-public:
-    triangle(d3d12_context* context) : sample(context){
-
-    }
-
-    void init() override{
-
-    }
-};
+#include "Triangle.h"
 
 int main(int args, char* argv[])
 {
-    application app{500, 500};
+#ifdef _DEBUG
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+    Application app{1280, 860};
     
-    triangle tri(app.m_context);
-    tri.init();
+    TriangleScene scene(app.m_context);   
+    
+    
 
-    int res = app.exec();
+    int res = app.exec(&scene);
+
     return res;
 }

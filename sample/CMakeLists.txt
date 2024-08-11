@@ -1,5 +1,8 @@
 
-add_executable(00-triangle 00-triangle/main.cpp)
+add_executable(00-triangle 
+    00-triangle/main.cpp
+    00-triangle/Triangle.h 
+    00-triangle/Triangle.cpp)
 
 set_target_properties(00-triangle PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${bin_dir}

@@ -4,13 +4,16 @@
 #include <Windows.h>
 
 #include <d3d12.h>
-#include <dxgi1_4.h>
+//#include <dxgi1_4.h>
+#include <dxgi1_6.h>
 #include <d3dcompiler.h>
+#include <dxgidebug.h>
 #include "d3dx12.h"
 
-#pragma comment(lib, "d3d12")
-#pragma comment(lib, "dxgi")
-#pragma comment(lib, "d3dcompiler")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "D3DCompiler.lib")
 
 
 #include <wrl.h>
@@ -20,6 +23,12 @@ typedef unsigned int uint;
 
 using Microsoft::WRL::ComPtr;
 
+template<typename T>
+using com_ptr = Microsoft::WRL::ComPtr<T>;
+
+
+
+
 #include <stdio.h>
 #include <iostream>
 
@@ -27,6 +36,18 @@ using Microsoft::WRL::ComPtr;
 
 #define safe_delete(x) if(x) { delete x; x = nullptr; }
 #define safe_release(x) if(x) { x->Release(); x = nullptr; }
+
+#ifdef _DEBUG
+	#define _CRTDBG_MAP_ALLOC
+	#include <crtdbg.h>
+	#define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#endif
+
+#ifdef _DEBUG
+#define set_name(obj, name) if(obj) { obj->SetName(L#name);}
+#else
+#define set_name(ovj, name)
+#endif
 
 inline void __hr(HRESULT hr, LPCSTR filename, int line)
 {

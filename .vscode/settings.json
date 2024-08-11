@@ -8,5 +8,11 @@
         "**/Thumbs.db": true,
         "**/*.git*" : true,
         "**/LICENSE*" : true
+    },
+    "files.associations": {
+        "iostream": "cpp",
+        "*.hlsl" : "hlsl",
+        "*.fx" : "hlsl"
     }
+    
 }

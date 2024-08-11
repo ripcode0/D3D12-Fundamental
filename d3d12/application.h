@@ -3,15 +3,18 @@
 #include "config.h"
 
 class d3d12_context;
-class application
+class DX12Context;
+class Scene;
+class Application
 {
 public:
-    application(int cx, int cy);
-    ~application();
+    Application(int cx, int cy);
+    ~Application();
 
-    int exec(void* scene = nullptr);
+    int exec(Scene* scene = nullptr);
 
-    d3d12_context* m_context;
+    
+    DX12Context* m_context{};
 protected:
     static LRESULT WINAPI wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
