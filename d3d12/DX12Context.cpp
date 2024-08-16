@@ -87,7 +87,7 @@ void DX12Context::release()
     safe_release(m_command_allocator);
 
     safe_release(m_factory);
-    //safe_release(m_fence);
+    safe_release(m_fence);
 
     CloseHandle(m_fence_event);
 

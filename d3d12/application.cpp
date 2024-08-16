@@ -11,7 +11,7 @@ Application::Application(int cx, int cy)
     wc.lpfnWndProc = Application::wnd_proc;
     wc.hInstance = GetModuleHandleA(nullptr);
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wc.lpszClassName = "d3d12 sample";
+    wc.lpszClassName = "D3D12 Fundamental";
 
     RegisterClassExA(&wc);
 
@@ -60,14 +60,14 @@ int Application::exec(Scene* current_scene)
         /* code */
         //making ur own math lib
         else{
-            //m_context->begine_frame();
+            m_context->begine_frame();
 
-            //if(current_scene){
-            //    current_scene->update_frame(0.f);
-            //    current_scene->render_frame();
-            //}
+            if(current_scene){
+               current_scene->update_frame(0.f);
+               current_scene->render_frame();
+            }
 
-            //m_context->end_frame();
+            m_context->end_frame();
         }
         
     }

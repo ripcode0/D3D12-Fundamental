@@ -10,7 +10,8 @@ TriangleScene::TriangleScene(DX12Context *context)
 void TriangleScene::initialize()
 {
     CD3DX12_DESCRIPTOR_RANGE range[2] = {};
-    range[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //b0 : const buffer reg
+    range[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 2, 0); //b0 : const buffer reg b1
+    //range[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //b0 : const buffer reg
     range[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //t0 : shader resource
     
 
@@ -63,7 +64,7 @@ void TriangleScene::initialize()
     // srv_heap_desc.NumDescriptors = 1;
     // srv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     // srv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    m_device->CreateDescriptorHeap(&srv_heap_desc, IID_PPV_ARGS(&m_cbv_heap));
+    //m_device->CreateDescriptorHeap(&srv_heap_desc, IID_PPV_ARGS(&m_cbv_heap));
 
     ID3DBlob* vs_blob{};
     ID3DBlob* ps_blob{};
@@ -106,11 +107,47 @@ void TriangleScene::initialize()
     m_vbo_view.SizeInBytes = sizeof(float) * _countof(vertices);
     m_vbo_view.StrideInBytes = sizeof(float) * 7;
 
+    create_const_buffers();
+
 }
 
 void TriangleScene::update_frame(float dt) 
 {
+    static uint frame = 0;
+    float f = std::sinf(frame * 0.03f);
 
+    matrices = {
+        {   0.5f, 0.0f, 0.0f, 0.f,
+            0.0f, 0.5f, 0.0f, 0.f,
+            0.0f, 0.0f, 0.5f, 0.f,
+            0.0f, 0.0f, 0.0f, 1.f},
+
+        {   cosf(f), -sinf(f),  0.0f, 0.f,
+            sinf(f),  cosf(f),  0.0f, 0.f,
+               0.0f,     0.0f,  1.0f, 0.f,
+               0.0f,     0.0f,  0.0f, 1.f},
+
+        {   1.0f, 0.0f, 0.0f, 0.f,
+            0.0f, 1.0f, 0.0f, 0.f,
+            0.0f, 0.0f, 1.0f, 0.f,
+            sinf(f), 0.0f, 0.0f, 1.f}
+    };
+
+    void* mapped_data{};
+    //CD3DX12_RANGE range(0,0);
+    D3D12_RANGE range{};
+    m_cbo->Map(0, &range, &mapped_data);
+    memcpy(mapped_data, &matrices, sizeof(matrices));
+    m_cbo->Unmap(0, nullptr);
+
+    colors = { cosf(f), sinf(f), sinf(f), 1.f};
+
+    mapped_data ={};
+    m_cbo1->Map(0, &range, &mapped_data);
+    memcpy(mapped_data, &colors, sizeof(colors));
+    m_cbo1->Unmap(0, nullptr);
+
+    frame++;
 }
 
 void TriangleScene::render_frame() 
@@ -119,6 +156,13 @@ void TriangleScene::render_frame()
     m_command_list->SetGraphicsRootSignature(m_root_signature);
     m_command_list->IASetVertexBuffers(0, 1, &m_vbo_view);
     m_command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    //cbo
+    ID3D12DescriptorHeap* heap_list[] = {m_cbo_heap};
+    m_command_list->SetDescriptorHeaps(_countof(heap_list), heap_list);
+    m_command_list->SetGraphicsRootDescriptorTable(0, m_cbo_heap->GetGPUDescriptorHandleForHeapStart());
+
+
     m_command_list->DrawInstanced(3, 1, 0, 0);
 }
 
@@ -126,7 +170,68 @@ void TriangleScene::release()
 {
     safe_release(m_root_signature);
     safe_release(m_srv_heap);
-    safe_release(m_cbv_heap);
     safe_release(m_pipeline);
     safe_release(m_vbo);
+    safe_release(m_cbo);
+    safe_release(m_cbo1);
+    safe_release(m_cbo_heap);
+}
+
+void TriangleScene::create_const_buffers() 
+{
+    matrices = {
+        {   
+            0.5f, 0.0f, 0.0f, 0.f,
+            0.0f, 0.5f, 0.0f, 0.f,
+            0.0f, 0.0f, 0.5f, 0.f,
+            0.0f, 0.0f, 0.0f, 1.f},
+
+        {   1.0f,    0.0f,     0.0f, 0.f,
+            0.0f,    1.0f,     0.0f, 0.f,
+            0.0f,    0.0f,     1.0f, 0.f,
+            0.0f,    0.0f,     0.0f, 1.f},
+
+        {   1.0f, 0.0f, 0.0f, 0.f,
+            0.0f, 1.0f, 0.0f, 0.f,
+            0.0f, 0.0f, 1.0f, 0.f,
+            0.0f, 0.0f, 0.0f, 1.f},
+    };
+    DX12::create_constant_buffer(
+        &matrices, sizeof(Matrices), &m_cbo
+    );
+
+    colors = {
+        1,1,0,1
+    };
+    DX12::create_constant_buffer(
+        &colors, sizeof(colors), &m_cbo1
+    );
+
+
+    //we'll using 2 constatn buffers
+    D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
+    heap_desc.NumDescriptors = 2;
+    heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+    HR(m_device->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&m_cbo_heap)));
+
+    //b0
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbo_view_desc{};
+    cbo_view_desc.BufferLocation = m_cbo->GetGPUVirtualAddress();
+    cbo_view_desc.SizeInBytes = DX12::align_256byte_size(sizeof(Matrices));
+
+    D3D12_CPU_DESCRIPTOR_HANDLE cbo_handle = m_cbo_heap->GetCPUDescriptorHandleForHeapStart();
+
+    m_device->CreateConstantBufferView(&cbo_view_desc, cbo_handle);
+
+    //b1
+    cbo_view_desc = {};
+    cbo_view_desc.BufferLocation = m_cbo1->GetGPUVirtualAddress();
+    cbo_view_desc.SizeInBytes = DX12::align_256byte_size(sizeof(Colors));
+
+    //increase handle ptr for the next one
+    cbo_handle.ptr += m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    
+    m_device->CreateConstantBufferView(&cbo_view_desc, cbo_handle);
 }

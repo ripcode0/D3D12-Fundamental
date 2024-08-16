@@ -2,29 +2,6 @@
 
 #include "config.h"
 
-struct raw_buffer
-{
-    ~raw_buffer(){ safe_release(resource);}
-    ID3D12Resource* resource;
-};
-
-struct vertex_buffer_create_info
-{
-    void* pData;
-
-};
-
-
-struct vertex_buffer : raw_buffer
-{
-    vertex_buffer(const vertex_buffer_create_info* info){
-        //DX12::create_resource_gpu_memory(info->pData, 100, &resource);
-    }
-    D3D12_VERTEX_BUFFER_VIEW view;
-};
-
-
-
 struct DX12
 {
     static void initialize(ID3D12Device* p_device);
@@ -56,6 +33,17 @@ struct DX12
         const char* version,
         _Out_ ID3DBlob** pp_blob
         );
+
+    static [[nodiscard]] HRESULT load_resouce_gpu_texture(
+        const char* file,
+        _Out_ ID3D12Resource** pp_resource
+    );
+
+    static void update_texture_for_write(
+        ID3D12Resource* dest_resource,
+        ID3D12Resource* srcs_resource);
+
+    static uint align_256byte_size(uint size);
 
 private:
     static void fence();
